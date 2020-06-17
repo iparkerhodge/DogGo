@@ -47,8 +47,10 @@ namespace DogGo.Repositories
 
                     while (reader.Read())
                     {
-
-                        TotalDuration = reader.GetInt32(reader.GetOrdinal("Total"));
+                        if (!reader.IsDBNull(reader.GetOrdinal("Total")))
+                        {
+                            TotalDuration = reader.GetInt32(reader.GetOrdinal("Total"));
+                        }
                     };
 
                     reader.Close();
