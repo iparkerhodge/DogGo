@@ -26,6 +26,69 @@ namespace DogGo.Repositories
             }
         }
 
+        public List<Dog> GetAllDogs()
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT d.Id AS dId, d.[Name] AS dName, OwnerId, Breed, Notes, ImageUrl,
+                            Email, o.[Name] AS oName, Address, Phone, NeighborhoodId, n.[Name] AS nName                           
+                        FROM Dog d
+                        JOIN Owner o ON o.id = d.OwnerId
+                        JOIN Neighborhood n ON n.Id = o.NeighborhoodId
+                    ";
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    List<Dog> dogs = new List<Dog>();
+                    while (reader.Read())
+                    {
+                        string notes = "";
+                        string imageUrl = "";
+                        if (!reader.IsDBNull(reader.GetOrdinal("Notes")))
+                        {
+                            notes = reader.GetString(reader.GetOrdinal("Notes"));
+                        }
+                        if (!reader.IsDBNull(reader.GetOrdinal("ImageUrl")))
+                        {
+                            imageUrl = reader.GetString(reader.GetOrdinal("ImageUrl"));
+                        }
+                        Dog dog = new Dog
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("dId")),
+                            Name = reader.GetString(reader.GetOrdinal("dName")),
+                            Breed = reader.GetString(reader.GetOrdinal("Breed")),
+                            Notes = notes,
+                            ImageUrl = imageUrl,
+                            OwnerId = reader.GetInt32(reader.GetOrdinal("OwnerId")),
+                            Owner = new Owner
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("OwnerId")),
+                                Name = reader.GetString(reader.GetOrdinal("oName")),
+                                Address = reader.GetString(reader.GetOrdinal("Address")),
+                                PhoneNumber = reader.GetString(reader.GetOrdinal("Phone")),
+                                NeighborhoodId = reader.GetInt32(reader.GetOrdinal("NeighborhoodId")),
+                                Neighborhood = new Neighborhood
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("NeighborhoodId")),
+                                    Name = reader.GetString(reader.GetOrdinal("nName"))
+                                }
+                            }
+                        };
+
+                        dogs.Add(dog);
+                    }
+
+                    reader.Close();
+
+                    return dogs;
+                }
+            }
+        }
+
         public List<Dog> GetDogsByOwner(int id)
         {
             using (SqlConnection conn = Connection)
@@ -70,6 +133,73 @@ namespace DogGo.Repositories
                     }
                     reader.Close();
                     return dogs;
+                }
+            }
+        }
+
+        public Dog GetDogById(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT d.Id AS dId, d.[Name] AS dName, OwnerId, Breed, Notes, ImageUrl,
+                            Email, o.[Name] AS oName, Address, Phone, NeighborhoodId, n.[Name] AS nName                           
+                        FROM Dog d
+                        JOIN Owner o ON o.id = d.OwnerId
+                        JOIN Neighborhood n ON n.Id = o.NeighborhoodId
+                        WHERE d.Id = @id";
+
+                    cmd.Parameters.AddWithValue("@id", id);
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    if (reader.Read())
+                    {
+                        string notes = "";
+                        string imageUrl = "";
+                        if (!reader.IsDBNull(reader.GetOrdinal("Notes")))
+                        {
+                            notes = reader.GetString(reader.GetOrdinal("Notes"));
+                        }
+                        if (!reader.IsDBNull(reader.GetOrdinal("ImageUrl")))
+                        {
+                            imageUrl = reader.GetString(reader.GetOrdinal("ImageUrl"));
+                        }
+                        Dog dog = new Dog
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("dId")),
+                            Name = reader.GetString(reader.GetOrdinal("dName")),
+                            Breed = reader.GetString(reader.GetOrdinal("Breed")),
+                            Notes = notes,
+                            ImageUrl = imageUrl,
+                            OwnerId = reader.GetInt32(reader.GetOrdinal("OwnerId")),
+                            Owner = new Owner
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("OwnerId")),
+                                Name = reader.GetString(reader.GetOrdinal("oName")),
+                                Address = reader.GetString(reader.GetOrdinal("Address")),
+                                PhoneNumber = reader.GetString(reader.GetOrdinal("Phone")),
+                                NeighborhoodId = reader.GetInt32(reader.GetOrdinal("NeighborhoodId")),
+                                Neighborhood = new Neighborhood
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("NeighborhoodId")),
+                                    Name = reader.GetString(reader.GetOrdinal("nName"))
+                                }
+                            }
+                        };
+
+                        reader.Close();
+                        return dog;
+                    }
+                    else
+                    {
+                        reader.Close();
+                        return null;
+                    }
                 }
             }
         }
