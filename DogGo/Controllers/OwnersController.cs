@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DogGo.Models;
+using DogGo.Models.ViewModels;
 using DogGo.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +15,8 @@ namespace DogGo.Controllers
     {
         private readonly OwnerRepository _ownerRepo;
         private readonly DogRepository _dogRepo;
+        private readonly NeighborhoodRepository _neighborhoodRepo;
+        private readonly WalkerRepository _walkerRepo;
 
 
         // The constructor accepts an IConfiguration object as a parameter. This class comes from the ASP.NET framework and is useful for retrieving things out of the appsettings.json file like connection strings.
@@ -21,6 +24,8 @@ namespace DogGo.Controllers
         {
             _ownerRepo = new OwnerRepository(config);
             _dogRepo = new DogRepository(config);
+            _neighborhoodRepo = new NeighborhoodRepository(config);
+            _walkerRepo = new WalkerRepository(config);
         }
 
         // GET: OwnerController
@@ -35,66 +40,85 @@ namespace DogGo.Controllers
         public ActionResult Details(int id)
         {
             Owner owner = _ownerRepo.GetOwnerById(id);
-            owner.Dogs = _dogRepo.GetDogsByOwner(id);
-
-            if (owner == null)
-            {
-                return NotFound();
-            }
-
-            return View(owner);
-        }
-
-        // GET: OwnerController/Create
-        public ActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: OwnerController/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(Owner owner)
-        {
-            try
-            {
-                _ownerRepo.AddOwner(owner);
-
-                return RedirectToAction("Index");
-            }
-            catch (Exception Ex)
-            {
-                return View(owner);
-            }
-        }
-
-        // GET: OwnerController/Edit/5
-        public ActionResult Edit(int id)
-        {
-            Owner owner = _ownerRepo.GetOwnerById(id);
 
             if(owner == null)
             {
                 return NotFound();
             }
 
-            return View(owner);
+            List<Dog> dogs = _dogRepo.GetDogsByOwner(owner.Id);
+            List<Walker> walkers = _walkerRepo.GetWalkersInNeighborhood(owner.NeighborhoodId);
+
+            ProfileViewModel vm = new ProfileViewModel()
+            {
+                Owner = owner,
+                Dogs = dogs,
+                Walkers = walkers
+            };
+
+            return View(vm);
+        }
+
+        // GET: OwnerController/Create
+        public ActionResult Create()
+        {
+            OwnerFormViewModel vm = new OwnerFormViewModel()
+            {
+                Owner = new Owner(),
+                Neighborhoods = _neighborhoodRepo.GetAll()
+            };
+
+            return View(vm);
+        }
+
+        // POST: OwnerController/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Create(OwnerFormViewModel vm)
+        {
+            try
+            {
+                _ownerRepo.AddOwner(vm.Owner);
+
+                return RedirectToAction("Index");
+            }
+            catch (Exception Ex)
+            {
+                return View(vm);
+            }
+        }
+
+        // GET: OwnerController/Edit/5
+        public ActionResult Edit(int id)
+        {
+            OwnerFormViewModel vm = new OwnerFormViewModel
+            {
+                Owner = _ownerRepo.GetOwnerById(id),
+                Neighborhoods = _neighborhoodRepo.GetAll()
+            };
+
+            if(vm.Owner == null)
+            {
+                return NotFound();
+            }
+
+            return View(vm);
         }
 
         // POST: OwnerController/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, Owner owner)
+        public ActionResult Edit(int id, OwnerFormViewModel vm)
         {
             try
             {
-                _ownerRepo.UpdateOwner(owner);
+                _ownerRepo.UpdateOwner(vm.Owner);
 
                 return RedirectToAction("Index");
             }
             catch
             {
-                return View(owner);
+                return View(vm);
             }
         }
 

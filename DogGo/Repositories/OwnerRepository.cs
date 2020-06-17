@@ -87,7 +87,7 @@ namespace DogGo.Repositories
 
                     SqlDataReader reader = cmd.ExecuteReader();
 
-                    if (reader.Read())
+                    if(reader.Read())
                     {
                         Owner owner = new Owner()
                         {
@@ -102,9 +102,11 @@ namespace DogGo.Repositories
                         reader.Close();
                         return owner;
                     }
-
-                    reader.Close();
-                    return null;
+                    else
+                    {
+                        reader.Close();
+                        return null;
+                    }
                 }
             }
         }
